@@ -1,22 +1,29 @@
 # sub2sing-box
 
-将订阅/节点连接转换为 sing-box 配置的工具。
+A tool for converting subscriptions/node connections into **sing-box** configuration.
 
-## 控制台命令
+## templates by me | [click me](https://github.com/legiz-ru/sb-rule-sets/blob/main/.github/sub2sing-box/README.md)
 
-使用 `sub2sing-box <command> -h` 查看各命令的帮助信息。
+## Proxy panel with localhost sub2sing-box
 
-## 配置
+  - [x-ui-pro by legiz](https://github.com/legiz-ru/x-ui-pro/blob/master/README.md#install-x-ui-pro)
+  - [xui-reverse-proxy by cortez24rus](https://github.com/cortez24rus/xui-reverse-proxy)
 
-示例:
+## Console Commands
+
+Use `sub2sing-box <command> -h` to view help information for each command.
+
+## Configuration
+
+Example:
 
 ```json
 {
-  "subscriptions": ["订阅地址1", "订阅地址2"],
-  "proxies": ["代理1", "代理2"],
-  "template": "模板路径或网络地址",
-  "delete": "剩余流量",
-  "rename": { "原文本": "新文本" },
+  "subscriptions": ["Subscription URL 1", "Subscription URL 2"],
+  "proxies": ["Proxy 1", "Proxy 2"],
+  "template": "Template path or URL",
+  "delete": "Remaining traffic",
+  "rename": { "Original text": "New text" },
   "group-type": "selector",
   "sort": "name",
   "sort-type": "asc",
@@ -24,31 +31,31 @@
 }
 ```
 
-将上述 JSON 内容保存为 `sub2sing-box.json`，执行:
+Save the above JSON content as `sub2sing-box.json`, then execute:
 
 ```
 sub2sing-box convert -c ./sub2sing-box.json
 ```
 
-即可生成 sing-box 配置，无需每次重复设置参数。
+This will generate a **sing-box** configuration without the need to repeatedly set parameters.
 
-## 模板
+## Templates
 
-### 默认模板
+### Default Template
 
-默认模板位于 `templates` 目录，使用 `tun` 配置，该配置仅供参考，请根据实际情况修改。
+The default template is located in the `templates` directory and uses the `tun` configuration. This configuration is for reference only—please modify it according to your actual needs.
 
-### 占位符
+### Placeholders
 
-模板中可使用以下占位符:
+The following placeholders can be used in the template:
 
-- `<all-proxy-tags>`: 插入所有节点标签
-- `<all-country-tags>`: 插入所有国家标签
-- `<国家(地区)二字码>`: 插入指定国家(地区)所有节点标签，如 `<tw>`
+- `<all-proxy-tags>`: Inserts all node tags
+- `<all-country-tags>`: Inserts all country tags
+- `<Country/Region Code>`: Inserts all node tags for a specific country/region, e.g., `<tw>`
 
-#### 占位符使用示例:
+#### Example Usage of Placeholders:
 
-假设有节点：
+Assuming we have nodes:
 
 - US
 - SG
@@ -57,16 +64,16 @@ sub2sing-box convert -c ./sub2sing-box.json
 ```json
 {
   "type": "selector",
-  "tag": "节点选择",
+  "tag": "Node Selection",
   "outbounds": ["<all-proxy-tags>", "direct"],
   "interrupt_exist_connections": true
 }
 
-// 转换后
+// After conversion
 
 {
   "type": "selector",
-  "tag": "节点选择",
+  "tag": "Node Selection",
   "outbounds": ["US", "SG", "TW", "direct"],
   "interrupt_exist_connections": true
 }
@@ -75,53 +82,54 @@ sub2sing-box convert -c ./sub2sing-box.json
 ```json
 {
   "type": "selector",
-  "tag": "节点选择",
+  "tag": "Node Selection",
   "outbounds": ["<all-country-tags>", "direct"],
   "interrupt_exist_connections": true
 }
 
-// 转换后
+// After conversion
 
 {
   "type": "selector",
-  "tag": "节点选择",
-  "outbounds": ["美国(US)", "新加坡(SG)", "台湾(TW)", "direct"],
+  "tag": "Node Selection",
+  "outbounds": ["United States (US)", "Singapore (SG)", "Taiwan (TW)", "direct"],
   "interrupt_exist_connections": true
 }
 
-// 其中 "美国(US)", "新加坡(SG)", "台湾(TW)" 为策略组，分别包含 US, SG, TW 节点
+// Where "United States (US)", "Singapore (SG)", and "Taiwan (TW)" are policy groups, each containing US, SG, and TW nodes.
 ```
 
 ```json
 {
   "type": "selector",
-  "tag": "巴哈姆特",
+  "tag": "Bahamut",
   "outbounds": ["<tw>", "direct"],
   "interrupt_exist_connections": true
 }
 
-// 转换后
+// After conversion
 
 {
   "type": "selector",
-  "tag": "巴哈姆特",
-  "outbounds": ["台湾(TW)", "direct"],
+  "tag": "Bahamut",
+  "outbounds": ["Taiwan (TW)", "direct"],
   "interrupt_exist_connections": true
 }
 ```
 
-## Docker 使用
+## Docker Usage
+### my fork dont have docker image, you can use original repo:
 
 ```
 docker run -p 8080:8080 nite07/sub2sing-box:latest
 ```
 
-可以挂载目录添加自定义模板
+You can mount directories to add custom templates.
 
-## Server 模式 API
+## Server Mode API
 
 ### GET /convert
 
-| query | 描述                                                                                                                    |
-| ----- | ----------------------------------------------------------------------------------------------------------------------- |
-| data  | 同上方配置，但需要使用 [base64 URL safe 编码](<https://gchq.github.io/CyberChef/#recipe=To_Base64('A-Za-z0-9%2B/%3D')>) |
+| Query | Description |
+| ----- | ----------- |
+| data  | Same as the configuration above, but must be encoded using [base64 URL safe encoding](<https://gchq.github.io/CyberChef/#recipe=To_Base64('A-Za-z0-9%2B/%3D')>) |
