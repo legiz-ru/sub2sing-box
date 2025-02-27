@@ -45,6 +45,19 @@
         flex-direction: column;
         gap: 10px;
       }
+
+.help-icon {
+  color: var(--mdui-color-primary);
+  cursor: pointer;
+}
+
+mdui-dialog-content {
+  padding: 20px !important;
+}
+
+mdui-dialog {
+  --mdui-dialog-max-width: 500px;
+}
     </style>
   </head>
   <body>
@@ -78,10 +91,14 @@
       </div>
       <!-- Template Section -->
       <div class="section">
-        <h3>
-          <!-- Updated templates link -->
-          <a href="https://github.com/legiz-ru/sb-rule-sets/blob/main/.github/sub2sing-box/README.md" data-i18n="template">Template</a>
-        </h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="margin: 0;">
+            <a href="https://github.com/legiz-ru/sb-rule-sets/blob/main/.github/sub2sing-box/README.md" data-i18n="template">Template</a>
+          </h3>
+          <mdui-button-icon>
+            <mdui-icon class="help-icon" name="help"></mdui-icon>
+          </mdui-button-icon>
+        </div>
         <!-- Replace text-field template input with a select whose label is translated -->
         <mdui-select data-i18n="choose-template" label="Choose Template" id="templateSelect" name="templateSelect" value="ru-bundle">
           <mdui-menu-item value="ru-bundle" selected>ru-bundle</mdui-menu-item>
@@ -185,6 +202,12 @@
       // Translation object with keys for template selection and revised rename-node for Chinese
       const translations = {
         "zh-CN": {
+          "template-descriptions": {
+            "ru-bundle": "轻量级规则列表，包含被屏蔽的服务和地理限制服务（如ChatGPT）- 适合大多数用户",
+            "re-filter": "包含几乎所有被屏蔽的网站，以及大量地理限制服务的列表",
+            "ru-bundle-refilter": "包含两个列表的模板",
+            "secret-sing-box": "除俄罗斯服务和流行的未屏蔽服务外，所有流量都通过代理的模板"
+          },
           "template": "模板",
           "choose-template": "选择模板",
           "custom-template-url": "自定义模板 URL",
@@ -213,12 +236,18 @@
           "custom-template-option": "自定义模板"
         },
         "en": {
+          "template-descriptions": {
+            "ru-bundle": "Lightweight list of blocked services and geo-blocked services (like ChatGPT) - suitable for most users",
+            "re-filter": "List containing almost all blocked sites and a large number of geo-blocked services",
+            "ru-bundle-refilter": "Template containing both lists",
+            "secret-sing-box": "Template where everything is routed through proxy except Russian services and popular unblocked services"
+          },
           "template": "Template",
           "choose-template": "Choose Template",
           "custom-template-url": "Custom Template URL",
           "nodes": "Nodes",
           "subscription-link": "Subscription Link",
-          "proxy-link": "Node Share Link",
+          "proxy-link": "Node Share Link (vless://)",
           "delete-node": "Delete Node",
           "rename-node": "Rename Node",
           "policy-group": "Policy Group",
@@ -241,12 +270,18 @@
           "custom-template-option": "Custom Template"
         },
         "ru": {
+          "template-descriptions": {
+            "ru-bundle": "Легковесный список правил заблокированных сервисов и сервисов с геоблокировкой (например ChatGPT) - подходит для большинства пользователей",
+            "re-filter": "Список, который содержит практически все заблокированные сайты, а также содержит в себе большое количество сервисов с геоблокировкой",
+            "ru-bundle-refilter": "Шаблон содержащий в себе два списка указанных выше",
+            "secret-sing-box": "Шаблон в котором всё направляется в прокси, кроме российских сервисов и популярных не заблокированных сервисов"
+          },
           "template": "Шаблон",
           "choose-template": "Выберите шаблон",
           "custom-template-url": "Введите URL шаблона",
           "nodes": "Узлы",
           "subscription-link": "Ссылка подписки",
-          "proxy-link": "Ссылка на узел",
+          "proxy-link": "Ссылка на узел (vless://)",
           "delete-node": "Удалить узел",
           "rename-node": "Переименовать узел",
           "policy-group": "Группа политик",
@@ -275,8 +310,67 @@
         setupTheme();
         initTemplateSelector();
         listenInput();
+        updateTemplateTooltip();
         // Do not auto-generate link on page load so Generate Link stays empty
       });
+
+function updateTemplateTooltip() {
+  const currentLang = localStorage.getItem("language") || "en";
+  const descriptions = translations[currentLang]["template-descriptions"];
+  
+  let dialog = document.getElementById('template-info-dialog');
+  
+  if (dialog) {
+    dialog.remove();
+  }
+
+  const dialogHTML = `
+    <mdui-dialog id="template-info-dialog" close-on-overlay-click close-on-esc>
+      <mdui-dialog-title style="text-align: center;">
+        <div style="font-size: 1.2em; font-weight: bold; color: var(--mdui-color-primary);">
+          ${currentLang === 'ru' ? 'Описание шаблонов' : 
+            currentLang === 'zh-CN' ? '模板说明' : 
+            'Template Descriptions'}
+        </div>
+      </mdui-dialog-title>
+      <mdui-dialog-content style="padding: 24px;">
+        ${Object.entries(descriptions).map(([key, desc]) => `
+          <div style="margin-bottom: 24px; text-align: center;">
+            <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 8px; color: var(--mdui-color-primary);">
+              ${key}
+            </div>
+            <div style="color: var(--mdui-color-on-surface); font-size: 1.1em; line-height: 1.5;">
+              ${desc}
+            </div>
+          </div>
+        `).join('')}
+      </mdui-dialog-content>
+      <mdui-dialog-actions>
+        <mdui-button onclick="closeTemplateDialog()">OK</mdui-button>
+      </mdui-dialog-actions>
+    </mdui-dialog>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', dialogHTML);
+
+  const helpIcon = document.querySelector('.help-icon');
+  if (helpIcon) {
+    helpIcon.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const dialog = document.getElementById('template-info-dialog');
+      if (dialog) {
+        dialog.open = true;
+      }
+    });
+  }
+}
+
+function closeTemplateDialog() {
+  const dialog = document.getElementById('template-info-dialog');
+  if (dialog) {
+    dialog.open = false;
+  }
+}
 
       function setupLanguage() {
         const languageMenu = document.getElementById("language");
@@ -319,6 +413,7 @@
             element.setAttribute("placeholder", translations[lang][phKey]);
           }
         });
+        updateTemplateTooltip();
       }
 
       function setupTheme() {
