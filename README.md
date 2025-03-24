@@ -118,10 +118,9 @@ Assuming we have nodes:
 ```
 
 ## Docker Usage
-### my fork dont have docker image, you can use original repo:
 
 ```
-docker run -p 8080:8080 nite07/sub2sing-box:latest
+docker run -p 127.0.0.1:8080:8080 ghcr.io/legiz-ru/sub2sing-box:latest
 ```
 
 You can mount directories to add custom templates.
