@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/nitezs/sub2sing-box/cmd"
+	"github.com/bestnite/sub2sing-box/cmd"
 )
 
 func main() {

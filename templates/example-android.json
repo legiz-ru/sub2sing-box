@@ -68,10 +68,7 @@
   "inbounds": [
     {
       "type": "tun",
-      "address": [
-        "172.16.0.1/30",
-        "fdfe:dcba:9876::1/126"
-      ],
+      "address": ["172.16.0.1/30", "fdfe:dcba:9876::1/126"],
       "auto_route": true,
       "strict_route": true,
       "exclude_interface": "tailscale0",
@@ -84,6 +81,7 @@
       "tag": "default",
       "outbounds": [
         "\u003call-proxy-tags\u003e",
+        "\u003call-country-tags\u003e",
         "direct"
       ]
     },
@@ -107,11 +105,7 @@
         "action": "hijack-dns"
       },
       {
-        "port": [
-          3478,
-          5348,
-          5349
-        ],
+        "port": [3478, 5348, 5349],
         "outbound": "direct"
       },
       {
@@ -129,10 +123,6 @@
       {
         "rule_set": "geosite-google",
         "outbound": "default"
-      },
-      {
-        "rule_set": "geosite-bahamut",
-        "outbound": "台湾(TW)"
       },
       {
         "process_path_regex": [

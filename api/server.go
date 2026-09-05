@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/nitezs/sub2sing-box/api/handler"
+	"github.com/bestnite/sub2sing-box/api/handler"
 
 	"github.com/gin-gonic/gin"
 )

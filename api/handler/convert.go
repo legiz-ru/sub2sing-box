@@ -3,9 +3,9 @@ package handler
 import (
 	"encoding/json"
 
-	"github.com/nitezs/sub2sing-box/common"
-	"github.com/nitezs/sub2sing-box/model"
-	"github.com/nitezs/sub2sing-box/util"
+	"github.com/bestnite/sub2sing-box/common"
+	"github.com/bestnite/sub2sing-box/model"
+	"github.com/bestnite/sub2sing-box/util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,6 +39,13 @@ func Convert(c *gin.Context) {
 		})
 		return
 	}
+	groupRules := make(map[string][]string)
+	err = json.Unmarshal([]byte(data.GroupRules), &groupRules)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": err.Error(),
+		})
+	}
 	result, err := common.Convert(
 		data.Subscriptions,
 		data.Proxies,
@@ -49,6 +56,8 @@ func Convert(c *gin.Context) {
 		data.GroupType,
 		data.SortKey,
 		data.SortType,
+		groupRules,
+		data.UserAgent,
 	)
 	if err != nil {
 		c.JSON(400, gin.H{

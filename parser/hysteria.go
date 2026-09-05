@@ -1,14 +1,16 @@
 package parser
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
 
-	"github.com/nitezs/sub2sing-box/constant"
-	"github.com/nitezs/sub2sing-box/model"
+	"github.com/bestnite/sub2sing-box/constant"
+	"github.com/bestnite/sub2sing-box/model"
 	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing/common/byteformats"
 )
 
 func ParseHysteria(proxy string) (model.Outbound, error) {
@@ -72,13 +74,31 @@ func ParseHysteria(proxy string) (model.Outbound, error) {
 	}
 	remarks = strings.TrimSpace(remarks)
 
+	up := &byteformats.NetworkBytesCompat{}
+	err = json.Unmarshal(fmt.Appendf(nil, `"%s"`, upmbps), up)
+	if err != nil {
+		return model.Outbound{}, &ParseError{
+			Type:    ErrInvalidNetworkBytesCompat,
+			Message: err.Error(),
+			Raw:     proxy,
+		}
+	}
+	down := &byteformats.NetworkBytesCompat{}
+	err = json.Unmarshal(fmt.Appendf(nil, `"%s"`, downmbps), down)
+	if err != nil {
+		return model.Outbound{}, &ParseError{
+			Type:    ErrInvalidNetworkBytesCompat,
+			Message: err.Error(),
+			Raw:     proxy,
+		}
+	}
 	outboundOptions := option.HysteriaOutboundOptions{
 		ServerOptions: option.ServerOptions{
 			Server:     server,
 			ServerPort: port,
 		},
-		Up:      upmbps,
-		Down:    downmbps,
+		Up:      up,
+		Down:    down,
 		Auth:    []byte(auth),
 		Obfs:    obfs,
 		Network: option.NetworkList(protocol),

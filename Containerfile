@@ -1,11 +1,11 @@
-FROM golang:1.23 as builder
+FROM golang:1.25 as builder
 LABEL authors="nite07"
 
 WORKDIR /app
 COPY . .
 RUN go mod download
 ARG version
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w -X github.com/nitezs/sub2sing-box/constant.Version=${version}" -o sub2sing-box .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w -X github.com/bestnite/sub2sing-box/constant.Version=${version}" -o sub2sing-box .
 WORKDIR /app
 
 FROM alpine:latest

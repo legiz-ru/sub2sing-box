@@ -7,14 +7,14 @@ import (
 
 	"github.com/bestnite/sub2sing-box/constant"
 	"github.com/bestnite/sub2sing-box/model"
-	"github.com/bestnite/sub2sing-box/util"
 	"github.com/sagernet/sing-box/option"
 )
 
-func ParseSocks(proxy string) (model.Outbound, error) {
-	if !strings.HasPrefix(proxy, constant.SocksPrefix) {
+func ParseAnytls(proxy string) (model.Outbound, error) {
+	if !strings.HasPrefix(proxy, constant.AnytlsPrefix) {
 		return model.Outbound{}, &ParseError{Type: ErrInvalidPrefix, Raw: proxy}
 	}
+
 	link, err := url.Parse(proxy)
 	if err != nil {
 		return model.Outbound{}, &ParseError{
@@ -23,6 +23,14 @@ func ParseSocks(proxy string) (model.Outbound, error) {
 			Raw:     proxy,
 		}
 	}
+
+	username := link.User.Username()
+	password, exist := link.User.Password()
+	if !exist {
+		password = username
+	}
+
+	query := link.Query()
 	server := link.Hostname()
 	if server == "" {
 		return model.Outbound{}, &ParseError{
@@ -32,57 +40,42 @@ func ParseSocks(proxy string) (model.Outbound, error) {
 		}
 	}
 	portStr := link.Port()
-	if portStr == "" {
-		return model.Outbound{}, &ParseError{
-			Type:    ErrInvalidStruct,
-			Message: "missing server port",
-			Raw:     proxy,
-		}
-	}
 	port, err := ParsePort(portStr)
 	if err != nil {
 		return model.Outbound{}, &ParseError{
-			Type: ErrInvalidPort,
-			Raw:  portStr,
+			Type:    ErrInvalidPort,
+			Message: err.Error(),
+			Raw:     proxy,
 		}
 	}
-
+	insecure, sni := query.Get("insecure"), query.Get("sni")
+	insecureBool := insecure == "1"
 	remarks := link.Fragment
 	if remarks == "" {
 		remarks = fmt.Sprintf("%s:%s", server, portStr)
 	}
 	remarks = strings.TrimSpace(remarks)
 
-	encodeStr := link.User.Username()
-	var username, password string
-	if encodeStr != "" {
-		decodeStr, err := util.DecodeBase64(encodeStr)
-		splitStr := strings.Split(decodeStr, ":")
-		if err != nil {
-			return model.Outbound{}, &ParseError{
-				Type:    ErrInvalidStruct,
-				Message: "url parse error",
-				Raw:     proxy,
-			}
-		}
-		username = splitStr[0]
-		if len(splitStr) == 2 {
-			password = splitStr[1]
-		}
-	}
-
-	outboundOptions := option.SOCKSOutboundOptions{
+	opts := option.AnyTLSOutboundOptions{
 		ServerOptions: option.ServerOptions{
 			Server:     server,
 			ServerPort: port,
 		},
-		Username: username,
 		Password: password,
+	}
+	if sni != "" {
+		opts.OutboundTLSOptionsContainer = option.OutboundTLSOptionsContainer{
+			TLS: &option.OutboundTLSOptions{
+				Enabled:    true,
+				ServerName: sni,
+				Insecure:   insecureBool,
+			},
+		}
 	}
 
 	return model.Outbound{
-		Type:    "socks",
+		Type:    "anytls",
 		Tag:     remarks,
-		Options: outboundOptions,
+		Options: opts,
 	}, nil
 }

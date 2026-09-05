@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/nitezs/sub2sing-box/common"
-	"github.com/nitezs/sub2sing-box/model"
+	"github.com/bestnite/sub2sing-box/common"
+	"github.com/bestnite/sub2sing-box/model"
 
 	"github.com/spf13/cobra"
 )
@@ -24,6 +24,8 @@ var (
 	sortKey       string
 	sortType      string
 	config        string
+	groupRules    string
+	userAgent     string
 )
 
 func init() {
@@ -38,6 +40,8 @@ func init() {
 	convertCmd.Flags().StringVarP(&sortKey, "sort", "S", "", "sort key, tag or num")
 	convertCmd.Flags().StringVarP(&sortType, "sort-type", "T", "", "sort type, asc or desc")
 	convertCmd.Flags().StringVarP(&config, "config", "c", "", "configuration file path")
+	convertCmd.Flags().StringVarP(&groupRules, "group-rules", "R", "", "group rules")
+	convertCmd.Flags().StringVarP(&userAgent, "user-agent", "u", "", "custom User-Agent for fetching subscriptions and remote templates")
 	RootCmd.AddCommand(convertCmd)
 }
 
@@ -50,6 +54,14 @@ var convertCmd = &cobra.Command{
 
 func convertRun(cmd *cobra.Command, args []string) {
 	loadConfig()
+	groupRulesMap := make(map[string][]string)
+	if groupRules != "" {
+		err := json.Unmarshal([]byte(groupRules), &groupRulesMap)
+		if err != nil {
+			fmt.Println("Error parsing group rules:", err)
+			return
+		}
+	}
 	result, err := common.Convert(
 		subscriptions,
 		proxies,
@@ -60,6 +72,8 @@ func convertRun(cmd *cobra.Command, args []string) {
 		groupType,
 		sortKey,
 		sortType,
+		groupRulesMap,
+		userAgent,
 	)
 	if err != nil {
 		fmt.Println("Conversion error:", err)
@@ -140,5 +154,8 @@ func mergeConfig(cfg model.ConvertRequest) {
 	}
 	if output == "" {
 		output = cfg.Output
+	}
+	if userAgent == "" {
+		userAgent = cfg.UserAgent
 	}
 }

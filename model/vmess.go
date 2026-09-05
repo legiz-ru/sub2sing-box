@@ -1,7 +1,7 @@
 package model
 
 type VmessJson struct {
-	V    string `json:"v"`
+	V    any    `json:"v"`
 	Ps   string `json:"ps"`
 	Add  string `json:"add"`
 	Port any    `json:"port"`

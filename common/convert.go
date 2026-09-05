@@ -8,13 +8,14 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
-	"github.com/nitezs/sub2sing-box/constant"
-	"github.com/nitezs/sub2sing-box/model"
-	"github.com/nitezs/sub2sing-box/parser"
-	"github.com/nitezs/sub2sing-box/util"
+	"github.com/bestnite/sub2sing-box/constant"
+	"github.com/bestnite/sub2sing-box/model"
+	"github.com/bestnite/sub2sing-box/parser"
+	"github.com/bestnite/sub2sing-box/util"
 	box "github.com/sagernet/sing-box"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/include"
@@ -22,7 +23,7 @@ import (
 	J "github.com/sagernet/sing/common/json"
 )
 
-var globalCtx = box.Context(context.Background(), include.InboundRegistry(), include.OutboundRegistry(), include.EndpointRegistry())
+var globalCtx = box.Context(context.Background(), include.InboundRegistry(), include.OutboundRegistry(), include.EndpointRegistry(), include.DNSTransportRegistry(), include.ServiceRegistry())
 
 func Convert(
 	subscriptions []string,
@@ -34,6 +35,8 @@ func Convert(
 	groupType string,
 	sortKey string,
 	sortType string,
+	groupRules map[string][]string,
+	userAgent string,
 ) (string, error) {
 	result := ""
 	var err error
@@ -42,7 +45,7 @@ func Convert(
 		groupType = C.TypeSelector
 	}
 
-	outbounds, err := ConvertSubscriptionsToSProxy(subscriptions)
+	outbounds, err := ConvertSubscriptionsToSProxy(subscriptions, userAgent)
 	if err != nil {
 		return "", err
 	}
@@ -99,10 +102,10 @@ func Convert(
 	}
 
 	if enableGroup {
-		outbounds = AddCountryGroup(outbounds, groupType, sortKey, sortType)
+		outbounds = AddCountryGroup(outbounds, groupType, sortKey, sortType, groupRules)
 	}
 	if templatePath != "" {
-		templateData, err := ReadTemplate(templatePath)
+		templateData, err := ReadTemplate(templatePath, userAgent)
 		if err != nil {
 			return "", err
 		}
@@ -114,7 +117,7 @@ func Convert(
 			}
 		}
 		if !enableGroup && (reg.MatchString(templateData) || strings.Contains(templateData, constant.AllCountryTags) || group) {
-			outbounds = AddCountryGroup(outbounds, groupType, sortKey, sortType)
+			outbounds = AddCountryGroup(outbounds, groupType, sortKey, sortType, groupRules)
 		}
 		var template model.Options
 		if template, err = J.UnmarshalExtendedContext[model.Options](globalCtx, []byte(templateData)); err != nil {
@@ -129,7 +132,7 @@ func Convert(
 		for _, v := range template.Options.Endpoints {
 			template.Endpoints = append(template.Endpoints, (model.Endpoint)(v))
 		}
-		result, err = MergeTemplate(outbounds, &template)
+		result, err = MergeTemplate(outbounds, &template, groupRules)
 		if err != nil {
 			return "", err
 		}
@@ -151,11 +154,25 @@ func Convert(
 	return string(result), nil
 }
 
-func AddCountryGroup(proxies []model.Outbound, groupType string, sortKey string, sortType string) []model.Outbound {
+func AddCountryGroup(proxies []model.Outbound, groupType string, sortKey string, sortType string, groupRules map[string][]string) []model.Outbound {
 	newGroup := make(map[string]model.Outbound)
+	groupRulesRegexps := make(map[string][]*regexp.Regexp)
+	for k, v := range groupRules {
+		for _, rule := range v {
+			groupRulesRegexps[k] = append(groupRulesRegexps[k], regexp.MustCompile(rule))
+		}
+	}
 	for _, p := range proxies {
 		if p.Type != C.TypeSelector && p.Type != C.TypeURLTest {
 			country := model.GetContryName(p.Tag)
+			for k, rules := range groupRulesRegexps {
+				for _, rule := range rules {
+					if rule.MatchString(p.Tag) {
+						country = k
+						break
+					}
+				}
+			}
 			if group, ok := newGroup[country]; ok {
 				AppendOutbound(&group, p.Tag)
 				newGroup[country] = group
@@ -210,12 +227,12 @@ func AddCountryGroup(proxies []model.Outbound, groupType string, sortKey string,
 	return append(proxies, groups...)
 }
 
-func ReadTemplate(template string) (string, error) {
+func ReadTemplate(template string, userAgent string) (string, error) {
 	var data string
 	var err error
 	isNetworkFile, _ := regexp.MatchString(`^https?://`, template)
 	if isNetworkFile {
-		data, err = util.Fetch(template, 3)
+		data, err = util.Fetch(template, 3, userAgent)
 		if err != nil {
 			return "", err
 		}
@@ -235,13 +252,17 @@ func ReadTemplate(template string) (string, error) {
 	}
 }
 
-func MergeTemplate(outbounds []model.Outbound, template *model.Options) (string, error) {
+func MergeTemplate(outbounds []model.Outbound, template *model.Options, groupRules map[string][]string) (string, error) {
 	var err error
 	proxyTags := make([]string, 0)
 	groupTags := make([]string, 0)
 	groups := make(map[string]model.Outbound)
+	rulesKeys := make([]string, 0)
+	for k := range groupRules {
+		rulesKeys = append(rulesKeys, k)
+	}
 	for _, p := range outbounds {
-		if model.IsCountryGroup(p.Tag) {
+		if slices.Contains(rulesKeys, p.Tag) || model.IsCountryGroup(p.Tag) {
 			groupTags = append(groupTags, p.Tag)
 			reg := regexp.MustCompile("[A-Za-z]{2}")
 			country := reg.FindString(p.Tag)
@@ -300,10 +321,10 @@ func ConvertCProxyToSProxy(proxy string) (model.Outbound, error) {
 	return model.Outbound{}, errors.New("unknown proxy format")
 }
 
-func ConvertSubscriptionsToSProxy(urls []string) ([]model.Outbound, error) {
+func ConvertSubscriptionsToSProxy(urls []string, userAgent string) ([]model.Outbound, error) {
 	proxyList := make([]model.Outbound, 0)
 	for _, url := range urls {
-		data, err := util.Fetch(url, 3)
+		data, err := util.Fetch(url, 3, userAgent)
 		if err != nil {
 			return nil, err
 		}

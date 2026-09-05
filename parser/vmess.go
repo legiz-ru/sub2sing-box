@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nitezs/sub2sing-box/constant"
-	"github.com/nitezs/sub2sing-box/model"
-	"github.com/nitezs/sub2sing-box/util"
+	"github.com/bestnite/sub2sing-box/constant"
+	"github.com/bestnite/sub2sing-box/model"
+	"github.com/bestnite/sub2sing-box/util"
 	"github.com/sagernet/sing-box/option"
 	"github.com/sagernet/sing/common/json/badoption"
 )

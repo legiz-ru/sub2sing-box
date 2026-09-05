@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/nitezs/sub2sing-box/constant"
+	"github.com/bestnite/sub2sing-box/constant"
 
 	"github.com/spf13/cobra"
 )
