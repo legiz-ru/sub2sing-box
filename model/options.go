@@ -1,33 +1,9 @@
 package model
 
 import (
-	"bytes"
-	"context"
-
 	"github.com/sagernet/sing-box/option"
-	"github.com/sagernet/sing/common/json"
 	"github.com/sagernet/sing/common/json/badjson"
 )
-
-type _Options struct {
-	option.Options
-	Endpoints []Endpoint `json:"endpoints,omitempty"`
-	Inbounds  []Inbound  `json:"inbounds,omitempty"`
-	Outbounds []Outbound `json:"outbounds,omitempty"`
-}
-
-type Options _Options
-
-func (o *Options) UnmarshalJSONContext(ctx context.Context, content []byte) error {
-	decoder := json.NewDecoderContext(ctx, bytes.NewReader(content))
-	decoder.DisallowUnknownFields()
-	err := decoder.Decode((*_Options)(o))
-	if err != nil {
-		return err
-	}
-	o.RawMessage = content
-	return nil
-}
 
 type LogOptions struct {
 	Disabled     bool   `json:"disabled,omitempty"`

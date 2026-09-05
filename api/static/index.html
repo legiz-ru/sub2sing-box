@@ -101,10 +101,17 @@ mdui-dialog {
         </div>
         <!-- Replace text-field template input with a select whose label is translated -->
         <mdui-select data-i18n="choose-template" label="Choose Template" id="templateSelect" name="templateSelect" value="ru-bundle">
-          <mdui-menu-item value="ru-bundle" selected>ru-bundle</mdui-menu-item>
-          <mdui-menu-item value="ru-bundle-refilter">ru-bundle-refilter</mdui-menu-item>
-          <mdui-menu-item value="re-filter">re-filter</mdui-menu-item>
-          <mdui-menu-item value="secret-sing-box">secret-sing-box</mdui-menu-item>
+          <mdui-menu-item value="ru-bundle" selected>ru-bundle (sing-box 1.14)</mdui-menu-item>
+          <mdui-menu-item value="ru-bundle-oisd-big">ru-bundle + oisd-big (sing-box 1.14)</mdui-menu-item>
+          <mdui-menu-item value="secret-sing-box">secret-sing-box (sing-box 1.14)</mdui-menu-item>
+          <mdui-menu-item value="ru-bundle-sb1-11">ru-bundle (sing-box 1.11)</mdui-menu-item>
+          <mdui-menu-item value="ru-bundle-oisd-big-sb1-11">ru-bundle + oisd-big (sing-box 1.11)</mdui-menu-item>
+          <mdui-menu-item value="ru-bundle-refilter">ru-bundle + re-filter (sing-box 1.11)</mdui-menu-item>
+          <mdui-menu-item value="re-filter">re-filter (sing-box 1.11)</mdui-menu-item>
+          <mdui-menu-item value="secret-sing-box-sb1-11">secret-sing-box (sing-box 1.11)</mdui-menu-item>
+          <mdui-menu-item value="secret-sing-box-remnawave">secret-sing-box + Remnawave (sing-box 1.11)</mdui-menu-item>
+          <mdui-menu-item value="ru-bundle-sb1-10">ru-bundle (sing-box 1.10)</mdui-menu-item>
+          <mdui-menu-item value="secret-sing-box-sb1-10">secret-sing-box (sing-box 1.10)</mdui-menu-item>
           <mdui-menu-item value="custom" data-i18n="custom-template-option">Custom Template</mdui-menu-item>
         </mdui-select>
         <!-- Hidden field for custom template input -->
@@ -166,6 +173,11 @@ mdui-dialog {
               <mdui-menu-item value="desc" data-i18n="descending">Descending</mdui-menu-item>
             </mdui-select>
           </div>
+          <div>
+            <mdui-text-field autosize data-i18n="group-rules" label="Group Rules" type="text" id="group-rules"
+              name="group-rules" min-rows="3" max-rows="5" data-i18n-placeholder="group-rules-placeholder">
+            </mdui-text-field>
+          </div>
         </div>
         <!-- Result Section -->
         <div class="section">
@@ -199,11 +211,27 @@ mdui-dialog {
       </div>
     </div>
     <script>
+      const TEMPLATE_BASE_URL = "https://github.com/legiz-ru/sb-rule-sets/raw/main/.github/sub2sing-box/";
+      const TEMPLATE_FILES = {
+        "ru-bundle": "sb1-14-ru-bundle.json",
+        "ru-bundle-oisd-big": "sb1-14-ru-bundle-oisd-big.json",
+        "secret-sing-box": "sb1-14-secret-sing-box.json",
+        "ru-bundle-sb1-11": "sb1-11-ru-bundle.json",
+        "ru-bundle-oisd-big-sb1-11": "sb1-11-ru-bundle-oisd-big.json",
+        "ru-bundle-refilter": "sb1-11-ru-bundle-refilter.json",
+        "re-filter": "sb1-11-re-filter.json",
+        "secret-sing-box-sb1-11": "sb1-11-secret-sing-box.json",
+        "secret-sing-box-remnawave": "sb1-11-secret-sing-box-remnawave.json",
+        "ru-bundle-sb1-10": "sb1-10-ru-bundle.json",
+        "secret-sing-box-sb1-10": "sb1-10-secret-sing-box.json",
+      };
+
       // Translation object with keys for template selection and revised rename-node for Chinese
       const translations = {
         "zh-CN": {
           "template-descriptions": {
             "ru-bundle": "轻量级规则列表，包含被屏蔽的服务和地理限制服务（如ChatGPT）- 适合大多数用户",
+            "ru-bundle + oisd-big": "ru-bundle 加上 oisd-big 广告拦截列表",
             "re-filter": "包含几乎所有被屏蔽的网站，以及大量地理限制服务的列表",
             "ru-bundle-refilter": "包含两个列表的模板",
             "secret-sing-box": "除俄罗斯服务和流行的未屏蔽服务外，所有流量都通过代理的模板"
@@ -224,6 +252,8 @@ mdui-dialog {
           "sort-order": "排序方式",
           "ascending": "升序",
           "descending": "降序",
+          "group-rules": "策略组规则",
+          "group-rules-placeholder": "Json格式: {\"US\": [\"US-CA\", \"US-TX\"], \"CN\": [\"CN-BJ\", \"CN-SH\"]}, 支持正则表达式",
           "generate-link": "生成链接",
           "theme-light": "亮色",
           "theme-dark": "暗色",
@@ -238,6 +268,7 @@ mdui-dialog {
         "en": {
           "template-descriptions": {
             "ru-bundle": "Lightweight list of blocked services and geo-blocked services (like ChatGPT) - suitable for most users",
+            "ru-bundle + oisd-big": "Same as ru-bundle, plus the oisd-big ad blocking list",
             "re-filter": "List containing almost all blocked sites and a large number of geo-blocked services",
             "ru-bundle-refilter": "Template containing both lists",
             "secret-sing-box": "Template where everything is routed through proxy except Russian services and popular unblocked services"
@@ -258,6 +289,8 @@ mdui-dialog {
           "sort-order": "Sort Order",
           "ascending": "Ascending",
           "descending": "Descending",
+          "group-rules": "Group Rules",
+          "group-rules-placeholder": "Json format: {\"US\": [\"US-CA\", \"US-TX\"], \"CN\": [\"CN-BJ\", \"CN-SH\"]}, support regex",
           "generate-link": "Generate Link",
           "theme-light": "Light",
           "theme-dark": "Dark",
@@ -272,6 +305,7 @@ mdui-dialog {
         "ru": {
           "template-descriptions": {
             "ru-bundle": "Легковесный список правил заблокированных сервисов и сервисов с геоблокировкой (например ChatGPT) - подходит для большинства пользователей",
+            "ru-bundle + oisd-big": "То же, что ru-bundle, плюс блокировка рекламы по списку oisd-big",
             "re-filter": "Список, который содержит практически все заблокированные сайты, а также содержит в себе большое количество сервисов с геоблокировкой",
             "ru-bundle-refilter": "Шаблон содержащий в себе два списка указанных выше",
             "secret-sing-box": "Шаблон в котором всё направляется в прокси, кроме российских сервисов и популярных не заблокированных сервисов"
@@ -292,6 +326,8 @@ mdui-dialog {
           "sort-order": "Порядок сортировки",
           "ascending": "По возрастанию",
           "descending": "По убыванию",
+          "group-rules": "Группа правил",
+          "group-rules-placeholder": "Формат JSON: {\"US\": [\"US-CA\", \"US-TX\"], \"CN\": [\"CN-BJ\", \"CN-SH\"]}, поддержка регулярных выражений",
           "generate-link": "Создать ссылку",
           "theme-light": "Светлая",
           "theme-dark": "Темная",
@@ -503,14 +539,8 @@ function closeTemplateDialog() {
         const templateSelect = document.getElementById("templateSelect").value;
         if (templateSelect === "custom") {
           template = document.getElementById("customTemplate").value;
-        } else if (templateSelect === "ru-bundle") {
-          template = "https://github.com/legiz-ru/sb-rule-sets/raw/main/.github/sub2sing-box/ru-bundle.json";
-        } else if (templateSelect === "ru-bundle-refilter") {
-          template = "https://github.com/legiz-ru/sb-rule-sets/raw/main/.github/sub2sing-box/ru-bundle-refilter.json";
-        } else if (templateSelect === "re-filter") {
-          template = "https://github.com/legiz-ru/sb-rule-sets/raw/main/.github/sub2sing-box/re-filter.json";
-        } else if (templateSelect === "secret-sing-box") {
-          template = "https://github.com/legiz-ru/sb-rule-sets/raw/main/.github/sub2sing-box/secret-sing-box.json";
+        } else if (TEMPLATE_FILES[templateSelect]) {
+          template = TEMPLATE_BASE_URL + TEMPLATE_FILES[templateSelect];
         }
         const renameFrom = Array.from(document.getElementsByName("rename_from[]")).map((input) => input.value);
         const renameTo = Array.from(document.getElementsByName("rename_to[]")).map((input) => input.value);
@@ -518,6 +548,7 @@ function closeTemplateDialog() {
         const groupType = document.getElementById("group-type").value;
         const sort = document.getElementById("sort").value;
         const sortType = document.getElementById("sort-type").value;
+        const groupRules = document.getElementById("group-rules").value;
 
         let rename = {};
         for (let i = 0; i < renameFrom.length; i++) {
@@ -554,6 +585,7 @@ function closeTemplateDialog() {
           "group-type": groupType,
           sort,
           "sort-type": sortType,
+          "group-rules": groupRules,
         };
         output.value = baseURL + "/convert?data=" + encodeBase64(JSON.stringify(data));
       }

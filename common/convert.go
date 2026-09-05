@@ -1,7 +1,6 @@
 package common
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,14 +15,10 @@ import (
 	"github.com/bestnite/sub2sing-box/model"
 	"github.com/bestnite/sub2sing-box/parser"
 	"github.com/bestnite/sub2sing-box/util"
-	box "github.com/sagernet/sing-box"
 	C "github.com/sagernet/sing-box/constant"
-	"github.com/sagernet/sing-box/include"
 	"github.com/sagernet/sing-box/option"
-	J "github.com/sagernet/sing/common/json"
+	"github.com/sagernet/sing/common/json/badjson"
 )
-
-var globalCtx = box.Context(context.Background(), include.InboundRegistry(), include.OutboundRegistry(), include.EndpointRegistry(), include.DNSTransportRegistry(), include.ServiceRegistry())
 
 func Convert(
 	subscriptions []string,
@@ -119,20 +114,7 @@ func Convert(
 		if !enableGroup && (reg.MatchString(templateData) || strings.Contains(templateData, constant.AllCountryTags) || group) {
 			outbounds = AddCountryGroup(outbounds, groupType, sortKey, sortType, groupRules)
 		}
-		var template model.Options
-		if template, err = J.UnmarshalExtendedContext[model.Options](globalCtx, []byte(templateData)); err != nil {
-			return "", err
-		}
-		for _, v := range template.Options.Outbounds {
-			template.Outbounds = append(template.Outbounds, (model.Outbound)(v))
-		}
-		for _, v := range template.Options.Inbounds {
-			template.Inbounds = append(template.Inbounds, (model.Inbound)(v))
-		}
-		for _, v := range template.Options.Endpoints {
-			template.Endpoints = append(template.Endpoints, (model.Endpoint)(v))
-		}
-		result, err = MergeTemplate(outbounds, &template, groupRules)
+		result, err = MergeTemplate(outbounds, templateData, groupRules)
 		if err != nil {
 			return "", err
 		}
@@ -252,8 +234,15 @@ func ReadTemplate(template string, userAgent string) (string, error) {
 	}
 }
 
-func MergeTemplate(outbounds []model.Outbound, template *model.Options, groupRules map[string][]string) (string, error) {
-	var err error
+// The template is kept as opaque JSON and only its "outbounds" are touched, so
+// templates written for any sing-box version pass through untouched instead of
+// being validated against the single version this binary is built against.
+func MergeTemplate(outbounds []model.Outbound, templateData string, groupRules map[string][]string) (string, error) {
+	var template badjson.JSONObject
+	if err := template.UnmarshalJSON([]byte(templateData)); err != nil {
+		return "", err
+	}
+
 	proxyTags := make([]string, 0)
 	groupTags := make([]string, 0)
 	groups := make(map[string]model.Outbound)
@@ -271,37 +260,68 @@ func MergeTemplate(outbounds []model.Outbound, template *model.Options, groupRul
 			proxyTags = append(proxyTags, p.Tag)
 		}
 	}
+	var templateOutbounds []json.RawMessage
+	if value, loaded := template.Get("outbounds"); loaded {
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return "", err
+		}
+		if err = json.Unmarshal(encoded, &templateOutbounds); err != nil {
+			return "", err
+		}
+	}
+
 	reg := regexp.MustCompile("<[A-Za-z]{2}>")
-	for i, o := range template.Outbounds {
-		outbound := (model.Outbound)(o)
-		if outbound.Type == C.TypeSelector || outbound.Type == C.TypeURLTest {
-			var parsedOutbound []string = make([]string, 0)
-			for _, o := range GetOutbounds(&outbound) {
-				if o == constant.AllProxyTags {
-					parsedOutbound = append(parsedOutbound, proxyTags...)
-				} else if o == constant.AllCountryTags {
-					parsedOutbound = append(parsedOutbound, groupTags...)
-				} else if reg.MatchString(o) {
-					country := strings.ToUpper(strings.Trim(reg.FindString(o), "<>"))
-					if group, ok := groups[country]; ok {
-						parsedOutbound = append(parsedOutbound, GetOutbounds(&group)...)
-					}
-				} else {
-					parsedOutbound = append(parsedOutbound, o)
+	for i, raw := range templateOutbounds {
+		var templateGroup struct {
+			Type      string   `json:"type"`
+			Outbounds []string `json:"outbounds"`
+		}
+		if err := json.Unmarshal(raw, &templateGroup); err != nil {
+			return "", err
+		}
+		if templateGroup.Type != C.TypeSelector && templateGroup.Type != C.TypeURLTest {
+			continue
+		}
+
+		parsedOutbound := make([]string, 0)
+		for _, o := range templateGroup.Outbounds {
+			if o == constant.AllProxyTags {
+				parsedOutbound = append(parsedOutbound, proxyTags...)
+			} else if o == constant.AllCountryTags {
+				parsedOutbound = append(parsedOutbound, groupTags...)
+			} else if reg.MatchString(o) {
+				country := strings.ToUpper(strings.Trim(reg.FindString(o), "<>"))
+				if group, ok := groups[country]; ok {
+					parsedOutbound = append(parsedOutbound, GetOutbounds(&group)...)
 				}
+			} else {
+				parsedOutbound = append(parsedOutbound, o)
 			}
-			SetOutbounds(&template.Outbounds[i], parsedOutbound)
 		}
-	}
-	template.Outbounds = append(template.Outbounds, outbounds...)
 
-	for i := range template.DNS.Rules {
-		if template.DNS.Rules[i].Type == "" {
-			template.DNS.Rules[i].Type = C.RuleTypeDefault
+		var object badjson.JSONObject
+		if err := object.UnmarshalJSON(raw); err != nil {
+			return "", err
 		}
+		object.Put("outbounds", parsedOutbound)
+		encoded, err := object.MarshalJSON()
+		if err != nil {
+			return "", err
+		}
+		templateOutbounds[i] = encoded
 	}
 
-	data, err := json.Marshal(template)
+	for i := range outbounds {
+		encoded, err := json.Marshal(&outbounds[i])
+		if err != nil {
+			return "", err
+		}
+		templateOutbounds = append(templateOutbounds, encoded)
+	}
+	template.Put("outbounds", templateOutbounds)
+
+	data, err := template.MarshalJSON()
 	if err != nil {
 		return "", err
 	}
