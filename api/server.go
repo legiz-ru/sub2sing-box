@@ -31,6 +31,13 @@ func RunServer(bind string, port uint16) {
 		},
 	)
 
+	// Clients probe this path even though the page declares its icon.
+	r.GET(
+		"/favicon.ico", func(c *gin.Context) {
+			c.Redirect(http.StatusFound, "/static/favicon.svg")
+		},
+	)
+
 	r.GET(
 		"/", func(c *gin.Context) {
 			c.HTML(
